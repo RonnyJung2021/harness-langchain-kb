@@ -1,0 +1,4 @@
+node_modules/
+dist/
+.env
+kb_store/*.json

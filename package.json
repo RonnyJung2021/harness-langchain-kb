@@ -1,0 +1,16 @@
+{
+  "name": "kb-rag-local",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "ingest": "tsx src/ingest.ts",
+    "ask": "tsx src/ask.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}
