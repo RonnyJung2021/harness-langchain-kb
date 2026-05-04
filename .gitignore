@@ -3,3 +3,5 @@ node_modules/
 dist/
 .env
 kb_store/*.json
+# 由 ingest:smoke 从内置 base64 生成，不提交
+pdfs/_smoke.pdf

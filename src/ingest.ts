@@ -1,15 +1,7 @@
 import path from "node:path";
 import "dotenv/config";
-import { getArkConfig } from "./config.js";
 import { REPO_ROOT } from "./paths.js";
-import { loadPdfAsDocuments } from "./pdf/loadPdf.js";
-import { splitDocumentsIntoChunks } from "./chunk/split.js";
-import { createArkOpenAIEmbeddings } from "./embed/arkEmbeddings.js";
-import {
-  filterOutSource,
-  mergePersistAndBuildStore,
-  readPersistedRecords,
-} from "./store/localVectorStore.js";
+import { runIngestFromAbsolutePdf } from "./ingestCore.js";
 
 function parsePdfCliArg(): string {
   const parts = process.argv.slice(2).filter((a) => a !== "--");
@@ -24,39 +16,16 @@ function resolvePdfPath(arg: string): string {
 }
 
 async function main() {
-  const t0 = Date.now();
-  const config = getArkConfig();
-  const embeddings = createArkOpenAIEmbeddings(config);
-
   const rawArg = parsePdfCliArg();
   const absolutePdf = resolvePdfPath(rawArg);
-  const sourceLabel = path.basename(absolutePdf);
+  const result = await runIngestFromAbsolutePdf(absolutePdf);
 
-  const pages = await loadPdfAsDocuments(absolutePdf, sourceLabel);
-  const chunks = await splitDocumentsIntoChunks(pages);
-  if (chunks.length === 0) {
-    throw new Error(
-      `分块后未得到任何文本块：${absolutePdf}。请检查 PDF 是否仅含空白或不可见字符。`,
-    );
-  }
-
-  const existing = await readPersistedRecords();
-  const kept = filterOutSource(existing, sourceLabel);
-
-  const { vectorsPath, manifestPath, allRecords } =
-    await mergePersistAndBuildStore({
-      embeddings,
-      keptRecords: kept,
-      newChunkDocuments: chunks,
-    });
-
-  const ms = Date.now() - t0;
   console.log(
-    `块数量：${chunks.length}（本文件 ${sourceLabel}）；库内总块数：${allRecords.length}`,
+    `块数量：${result.chunkCount}（本文件 ${result.sourceLabel}）；库内总块数：${result.totalChunks}`,
   );
-  console.log(`耗时：${ms} ms`);
+  console.log(`耗时：${result.ms} ms`);
   console.log(
-    `写入路径：\n  - ${vectorsPath}\n  - ${manifestPath}`,
+    `写入路径：\n  - ${result.vectorsPath}\n  - ${result.manifestPath}`,
   );
 }
 
